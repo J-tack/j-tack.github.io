@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Profesyonel Yatırım Analizi</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e8eaf0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { background: #1a1d27; padding: 25px; border-radius: 15px; width: 100%; max-width: 650px; border: 1px solid #2a2d3a; }
+        input { width: 100%; padding: 10px; margin: 8px 0 15px 0; background: #0f1117; border: 1px solid #2a2d3a; color: white; border-radius: 5px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Yatırım & Enflasyon Analizi</h2>
+    
+    <label>Başlangıç (₺/$)</label> <input type="number" id="anaPara" value="10000">
+    <label>Aylık Katkı</label> <input type="number" id="aylikKatki" value="1000">
+    
+    <div class="grid">
+        <div><label>Yıllık Temettü (%)</label> <input type="number" id="temettu" value="4"></div>
+        <div><label>Hisse Fiyat Artışı (%)</label> <input type="number" id="hisseBuyume" value="10"></div>
+    </div>
+    
+    <div class="grid">
+        <div><label>Yıllık Enflasyon (%)</label> <input type="number" id="enflasyon" value="15"></div>
+        <div><label>Süre (Yıl)</label> <input type="number" id="yil" value="10"></div>
+    </div>
+
+    <button onclick="hesaplaVeCiz()" style="width:100%; padding:15px; background:#00d4aa; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Analiz Et</button>
+
+    <div id="grafikKapsayici" style="margin-top:30px;"><canvas id="myChart"></canvas></div>
+    <div id="ozet" style="margin-top:20px; padding:15px; background:#0f1117; border-radius:10px; border:1px solid #00d4aa;"></div>
+</div>
+
+<script>
+    let chart;
+    function hesaplaVeCiz() {
+        let p = parseFloat(document.getElementById("anaPara").value);
+        let katkı = parseFloat(document.getElementById("aylikKatki").value);
+        let temettu = parseFloat(document.getElementById("temettu").value) / 100;
+        let fiyatArtisi = parseFloat(document.getElementById("hisseBuyume").value) / 100;
+        let enf = parseFloat(document.getElementById("enflasyon").value) / 100;
+        let yil = parseInt(document.getElementById("yil").value);
+
+        let labels = [], nominalData = [], reelData = [];
+        let bakiye = p;
+        let toplamEnflasyonEtkisi = 1;
+
+        for (let i = 0; i <= yil; i++) {
+            labels.push(i + " Yıl");
+            nominalData.push(Math.round(bakiye));
+            reelData.push(Math.round(bakiye / Math.pow(1 + enf, i)));
+
+            // Yıllık büyüme: (Hisse artışı + Temettü)
+            for(let j = 0; j < 12; j++) {
+                bakiye = (bakiye + katkı) * (1 + (fiyatArtisi + temettu) / 12);
+            }
+        }
+
+        if (chart) chart.destroy();
+        chart = new Chart(document.getElementById('myChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Nominal Değer', data: nominalData, borderColor: '#00d4aa' },
+                    { label: 'Enflasyondan Arındırılmış (Alım Gücü)', data: reelData, borderColor: '#ffaa44' }
+                ]
+            }
+        });
+
+        document.getElementById('ozet').innerHTML = `
+            <strong>Final Nominal Birikim:</strong> ${nominalData[yil].toLocaleString()} <br>
+            <strong>Bugünkü Alım Gücüyle Karşılığı:</strong> ${reelData[yil].toLocaleString()}
+        `;
+    }
+    hesaplaVeCiz();
+</script>
+</body>
+</html>
